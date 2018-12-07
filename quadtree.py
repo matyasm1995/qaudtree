@@ -1,10 +1,58 @@
 import json, sys, turtle
 from operator import itemgetter
 
-in_file = 'D:/Administrator/Documents/Geografie _Kartografie/magisterske_studium/1.rocnik/úvod do ' \
-          'programování/qaudtree/DU2/points_around_zerou.geojson '
-out_file = 'points_out.geojson'
-group_size = 6
+def is_geojson(file_name):
+    if not file_name[-8:] == ".geojson":
+        return False
+    else:
+        return True
+
+if len(sys.argv) < 3:
+    print('too few arguments')
+    exit(1)
+
+if len(sys.argv) == 3:
+    if is_geojson(sys.argv[1]) == True:
+        in_file = sys.argv[1]
+    else:
+        print(sys.argv[1] + 'vstupni soubor neni geojson')
+        exit(1)
+
+    if is_geojson(sys.argv[2]) == True:
+        out_file = sys.argv[2]
+    else:
+        print(sys.argv[2] + 'vystupni soubor neni geojson')
+        exit(1)
+
+    group_size = 50
+"""
+if len(sys.argv) == 4:
+    try:
+        group_size = int(sys.argv[1])
+    except ValueError:
+        try:
+            group_size = int(sys.argv[3])
+        except ValueError:
+            print(sys.argv[1] + 'ani' + sys.argv[3] + ' neni cele cislo')
+            exit(4)
+        finally:
+            if not sys.argv[1][:-8] == ".geojson":
+                print(sys.argv[1] + "vstupni soubor neni .geojson")
+                exit(2)
+            else:
+                in_file = sys.argv[1]
+
+            if not sys.argv[1][:-8] == ".geojson":
+                print(sys.argv[1] + " vystupni soubor neni .geojson")
+                exit(3)
+            else:
+                out_file = sys.argv[2]
+"""
+
+if len(sys.argv) > 4:
+    print('too many arguments')
+    exit(5)
+
 
 def build_quadtree(points,bbox,quad,depth,out_points):
     if len(points) <= group_size:
@@ -99,7 +147,7 @@ for i in range(len(points)):
 out_points = []
 x = build_quadtree(points, bbox, 0, 0, out_points)
 
-sorted_points = sorted(out_points,key=itemgetter(0))
+sorted_points = sorted(out_points, key=itemgetter(0))
 
 i = 0
 for feat in data['features']:

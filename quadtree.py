@@ -1,22 +1,19 @@
-import json, turtle, click
+import json, turtle, sys, os.path
 from operator import itemgetter
 
-@click.command()
-@click.option('--size', default=50, help="Maximalni pocet bodu ve skupine.",type=int)
-@click.argument('input_file', nargs=1, type=click.Path(exists=True))
-@click.argument('output_file', nargs=1)
-def args(input_file,output_file,size):
-    in_file = input_file
-    out_file = output_file
-    group_size = size
 
-
-
-#in_file = 'points_around_zerou.geojson'
-in_file = 'export.geojson'
-out_file = 'out.geojson'
-group_size = 50
-
+def open_geojson(file_name,mode):
+    if os.path.isfile(file_name):
+        try:
+            with open(file_name,mode, encoding="utf-8") as in_f:
+                data = json.load(in_f)
+        except:
+            print('soubor je poskozeny, ci se nejedna o korektni geojson')
+            exit(1)
+    else:
+        print('soubor neexistuje')
+        exit(1)
+    return data
 
 def build_quadtree(in_points, out_points, bbox, quadrant=0, depth=0, size=50):
     if len(in_points) <= size:
@@ -74,8 +71,19 @@ def graphic(bbox):
     turtle.up()
 
 
-with open(in_file, 'r',encoding="utf-8") as in_f:
-    data = json.load(in_f)
+if len(sys.argv) != 3:
+    print('malo nebo moc argumentu')
+    exit(1)
+else:
+    data = open_geojson(sys.argv[1],'r')
+
+if sys.argv[2][-8:] == ".geojson":
+    out_file = sys.argv[2]
+else:
+    print('vystupni soubor neni geojson')
+    exit(1)
+
+group_size = 50
 
 points = []
 ID = 1
@@ -98,14 +106,12 @@ for feature in data['features']:
             max_y = xy[1]
     ID += 1
 
-
 bbox = [min_x, min_y, max_x, max_y]
-print(bbox)
 
 turtle.setworldcoordinates(min_x, min_y, max_x, max_y)
 turtle.speed(0)
 turtle.ht()
-turtle.tracer(8, 25)
+turtle.tracer(50, 1)
 
 for i in range(len(points)):
     turtle.up()
@@ -113,8 +119,6 @@ for i in range(len(points)):
     turtle.down()
     turtle.dot(5, "blue")
 
-print(len(points))
-print(group_size)
 if len(points) <= group_size:
     i = 0
     for feat in data['features']:
@@ -123,11 +127,9 @@ if len(points) <= group_size:
 
     with open(out_file, 'w') as out:
         json.dump(data, out)
-
 else:
     out_points = []
-    out_points = build_quadtree(points, out_points, bbox)
-
+    out_points = build_quadtree(points, out_points, bbox,size=group_size)
     sorted_points = sorted(out_points, key=itemgetter(0))
 
     i = 0

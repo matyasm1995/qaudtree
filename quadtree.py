@@ -1,63 +1,27 @@
-import json, sys, turtle
+import json, turtle, click
 from operator import itemgetter
 
-def is_geojson(file_name):
-    if not file_name[-8:] == ".geojson":
-        return False
-    else:
-        return True
-
-if len(sys.argv) < 3:
-    print('too few arguments')
-    exit(1)
-
-if len(sys.argv) == 3:
-    if is_geojson(sys.argv[1]) == True:
-        in_file = sys.argv[1]
-    else:
-        print(sys.argv[1] + 'vstupni soubor neni geojson')
-        exit(1)
-
-    if is_geojson(sys.argv[2]) == True:
-        out_file = sys.argv[2]
-    else:
-        print(sys.argv[2] + 'vystupni soubor neni geojson')
-        exit(1)
-
-    group_size = 50
-"""
-if len(sys.argv) == 4:
-    try:
-        group_size = int(sys.argv[1])
-    except ValueError:
-        try:
-            group_size = int(sys.argv[3])
-        except ValueError:
-            print(sys.argv[1] + 'ani' + sys.argv[3] + ' neni cele cislo')
-            exit(4)
-        finally:
-            if not sys.argv[1][:-8] == ".geojson":
-                print(sys.argv[1] + "vstupni soubor neni .geojson")
-                exit(2)
-            else:
-                in_file = sys.argv[1]
-
-            if not sys.argv[1][:-8] == ".geojson":
-                print(sys.argv[1] + " vystupni soubor neni .geojson")
-                exit(3)
-            else:
-                out_file = sys.argv[2]
-"""
-
-if len(sys.argv) > 4:
-    print('too many arguments')
-    exit(5)
+@click.command()
+@click.option('--size', default=50, help="Maximalni pocet bodu ve skupine.",type=int)
+@click.argument('input_file', nargs=1, type=click.Path(exists=True))
+@click.argument('output_file', nargs=1)
+def args(input_file,output_file,size):
+    in_file = input_file
+    out_file = output_file
+    group_size = size
 
 
-def build_quadtree(points,bbox,quad,depth,out_points):
-    if len(points) <= group_size:
+
+#in_file = 'points_around_zerou.geojson'
+in_file = 'export.geojson'
+out_file = 'out.geojson'
+group_size = 50
+
+
+def build_quadtree(in_points, out_points, bbox, quadrant=0, depth=0, size=50):
+    if len(in_points) <= size:
         graphic(bbox)
-        for point in points:
+        for point in in_points:
             out_points.append(point)
         return
     else:
@@ -66,19 +30,19 @@ def build_quadtree(points,bbox,quad,depth,out_points):
         quad_2 = [node[0],bbox[1],bbox[2],node[1]]
         quad_3 = [bbox[0],bbox[1],node[0],node[1]]
         quad_4 = [bbox[0],node[1],node[0],bbox[3]]
-        P1 = select_points(points ,quad_1,1)
-        P2 = select_points(points, quad_2,2)
-        P3 = select_points(points, quad_3,3)
-        P4 = select_points(points, quad_4,4)
+        P1 = select_points(in_points, quad_1, 1)
+        P2 = select_points(in_points, quad_2, 2)
+        P3 = select_points(in_points, quad_3, 3)
+        P4 = select_points(in_points, quad_4, 4)
         graphic(bbox)
-        build_quadtree(P1, quad_1, 1, depth + 1,out_points)
-        build_quadtree(P2, quad_2, 2, depth + 1,out_points)
-        build_quadtree(P3, quad_3, 3, depth + 1,out_points)
-        build_quadtree(P4, quad_4, 4, depth + 1,out_points)
+        build_quadtree(P1,out_points, quad_1, 1, depth + 1, size)
+        build_quadtree(P2,out_points, quad_2, 2, depth + 1, size)
+        build_quadtree(P3,out_points, quad_3, 3, depth + 1, size)
+        build_quadtree(P4,out_points, quad_4, 4, depth + 1, size)
     return out_points
 
 
-def select_points(points,boundaries,quad):
+def select_points(points, boundaries, quad):
     P = []
     for j in range(len(points)):
         ID = points[j][0]
@@ -92,8 +56,9 @@ def select_points(points,boundaries,quad):
             continue
     return P
 
+
 def graphic(bbox):
-    turtle.speed(10)
+    turtle.speed(0)
     turtle.ht()
     turtle.up()
     turtle.setpos(bbox[0], bbox[1])
@@ -109,7 +74,7 @@ def graphic(bbox):
     turtle.up()
 
 
-with open(in_file, 'r') as in_f:
+with open(in_file, 'r',encoding="utf-8") as in_f:
     data = json.load(in_f)
 
 points = []
@@ -133,29 +98,45 @@ for feature in data['features']:
             max_y = xy[1]
     ID += 1
 
+
 bbox = [min_x, min_y, max_x, max_y]
-turtle.setworldcoordinates(min_x,min_y,max_x,max_y)
+print(bbox)
+
+turtle.setworldcoordinates(min_x, min_y, max_x, max_y)
+turtle.speed(0)
+turtle.ht()
+turtle.tracer(8, 25)
 
 for i in range(len(points)):
-    turtle.speed(10)
-    turtle.ht()
     turtle.up()
     turtle.setpos(points[i][1], points[i][2])
     turtle.down()
     turtle.dot(5, "blue")
 
-out_points = []
-x = build_quadtree(points, bbox, 0, 0, out_points)
+print(len(points))
+print(group_size)
+if len(points) <= group_size:
+    i = 0
+    for feat in data['features']:
+        feat['properties']['cluster_id'] = 0
+        i += 1
 
-sorted_points = sorted(out_points, key=itemgetter(0))
+    with open(out_file, 'w') as out:
+        json.dump(data, out)
 
-i = 0
-for feat in data['features']:
-    feat['properties']['cluster_id'] = sorted_points[i][3]
-    i += 1
+else:
+    out_points = []
+    out_points = build_quadtree(points, out_points, bbox)
 
-with open(out_file, 'w') as out:
-    json.dump(data, out)
+    sorted_points = sorted(out_points, key=itemgetter(0))
+
+    i = 0
+    for feat in data['features']:
+        feat['properties']['cluster_id'] = sorted_points[i][3]
+        i += 1
+
+    with open(out_file, 'w') as out:
+        json.dump(data, out)
 
 
 turtle.exitonclick()

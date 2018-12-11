@@ -21,7 +21,7 @@ def open_geojson(file_name):
         exit(1)
     return data
 
-def build_quadtree(in_points, out_points, bbox, quadrant=0, size=50):
+def build_quadtree(in_points, out_points, bbox, quadrant=0, size=10):
     '''
     rekurzivni funkce pro deleni bodu do kvadrantu
     :param in_points: vstupni body
@@ -121,14 +121,11 @@ else:
     print('vystupni soubor neni .geojson')
     exit(1)
 
-group_size = 50 # maximalni velikost skupiny
-
 points = []
-ID = 1
-for feature in data['features']: #tvorba seznamu vstupnich bodu
+for i, feature in enumerate(data['features'], 1): #tvorba seznamu vstupnich bodu
     xy = feature['geometry']['coordinates']
-    points.append([ID, xy[0], xy[1],""])
-    if ID == 1: #hledani bounding boxu vsech bodu
+    points.append([i, xy[0], xy[1], ""])
+    if i == 1: #hledani bounding boxu vsech bodu
         min_x = xy[0]
         max_x = xy[0]
         min_y = xy[1]
@@ -142,31 +139,24 @@ for feature in data['features']: #tvorba seznamu vstupnich bodu
             min_y = xy[1]
         if xy[1] > max_y:
             max_y = xy[1]
-    ID += 1
 
 bbox = [min_x, min_y, max_x, max_y]
 
 draw_points(points)
 
+group_size = 10 # maximalni velikost skupiny
+
 if len(points) <= group_size: #osetreni podminky, kdyz je velikost skupiny vetsi nebo rovna velikosti vsech bodu
-    i = 0
-    for feat in data['features']: #prirazeni kodu skupiny vystupnim bodum
-        feat['properties']['cluster_id'] = 0
-        i += 1
-    with open(out_file, 'w') as out: #ulozeni vystupniho souboru
-        json.dump(data, out)
+    for i, value in enumerate(data['features'], 0):
+        value['properties']['cluster_id'] = 0
 else:
     out_points = []
     out_points = build_quadtree(points, out_points, bbox,size=group_size)
     sorted_points = sorted(out_points, key=itemgetter(0)) #serazeni bodu podle jejich ID
+    for i, value in enumerate(data['features'], 0):
+        value['properties']['cluster_id'] = sorted_points[i][3] #prirazeni kodu skupiny vystupnim bodum
 
-    i = 0
-    for feat in data['features']:
-        feat['properties']['cluster_id'] = sorted_points[i][3] #prirazeni kodu skupiny vystupnim bodum
-        i += 1
-
-    with open(out_file, 'w') as out: #ulozeni vystupniho souboru
-        json.dump(data, out)
-
+with open(out_file, 'w') as out: #ulozeni vystupniho souboru
+    json.dump(data, out)
 
 turtle.exitonclick()

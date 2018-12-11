@@ -2,7 +2,7 @@ import json, turtle, sys, os.path
 from operator import itemgetter
 
 
-def open_geojson(file_name,mode):
+def open_geojson(file_name):
     '''
     funkce pro otevreni json/geojson
     :param file_name: nazev souboru
@@ -11,7 +11,7 @@ def open_geojson(file_name,mode):
     '''
     if os.path.isfile(file_name): #pokud soubor existuje
         try:
-            with open(file_name,mode, encoding="utf-8") as in_f: #zkus otevrit
+            with open(file_name, encoding="utf-8") as in_f: #zkus otevrit
                 data = json.load(in_f)
         except:
             print('soubor je poskozeny, ci se nejedna o korektni geojson')
@@ -21,7 +21,7 @@ def open_geojson(file_name,mode):
         exit(1)
     return data
 
-def build_quadtree(in_points, out_points, bbox, quadrant=0, depth=0, size=50):
+def build_quadtree(in_points, out_points, bbox, quadrant=0, size=50):
     '''
     rekurzivni funkce pro deleni bodu do kvadrantu
     :param in_points: vstupni body
@@ -33,25 +33,25 @@ def build_quadtree(in_points, out_points, bbox, quadrant=0, depth=0, size=50):
     :return: out_points
     '''
     if len(in_points) <= size: #konecna podminka rekurze
-        graphic(bbox)
+        draw_bbox(bbox)
         for point in in_points:
             out_points.append(point) #tvorba vystupniho seznamu bodu
         return
     else:
-        node = [(bbox[0]+bbox[2])/2,(bbox[1]+bbox[3])/2] #stred bboxu
-        quad_1 = [node[0],node[1],bbox[2],bbox[3]] #bbox prvniho kvadrantu
-        quad_2 = [node[0],bbox[1],bbox[2],node[1]] #bbox druheho kvadrantu
-        quad_3 = [bbox[0],bbox[1],node[0],node[1]] #bbox tretiho kvadrantu
-        quad_4 = [bbox[0],node[1],node[0],bbox[3]] #bbox ctvtteho kvadrantu
+        middle = [(bbox[0]+bbox[2])/2,(bbox[1]+bbox[3])/2] #stred bboxu
+        quad_1 = [middle[0],middle[1],bbox[2],bbox[3]] #bbox prvniho kvadrantu
+        quad_2 = [middle[0],bbox[1],bbox[2],middle[1]] #bbox druheho kvadrantu
+        quad_3 = [bbox[0],bbox[1],middle[0],middle[1]] #bbox tretiho kvadrantu
+        quad_4 = [bbox[0],middle[1],middle[0],bbox[3]] #bbox ctvtteho kvadrantu
         P1 = select_points(in_points, quad_1, 1) #body v prvnim kvadrantu
         P2 = select_points(in_points, quad_2, 2)
         P3 = select_points(in_points, quad_3, 3)
         P4 = select_points(in_points, quad_4, 4)
-        graphic(bbox)
-        build_quadtree(P1,out_points, quad_1, 1, depth + 1, size) #rekuzivni volani funkce pro prvni kvadrant
-        build_quadtree(P2,out_points, quad_2, 2, depth + 1, size)
-        build_quadtree(P3,out_points, quad_3, 3, depth + 1, size)
-        build_quadtree(P4,out_points, quad_4, 4, depth + 1, size)
+        draw_bbox(bbox)
+        build_quadtree(P1,out_points, quad_1, 1, size) #rekuzivni volani funkce pro prvni kvadrant
+        build_quadtree(P2,out_points, quad_2, 2, size)
+        build_quadtree(P3,out_points, quad_3, 3, size)
+        build_quadtree(P4,out_points, quad_4, 4, size)
     return out_points
 
 
@@ -77,7 +77,7 @@ def select_points(points, boundaries, quad):
     return P
 
 
-def graphic(bbox):
+def draw_bbox(bbox):
     '''
     funkce pro vykresleni aktualniho kvadrantu
     :param bbox: souradnice pro vykresleni
@@ -97,12 +97,23 @@ def graphic(bbox):
     turtle.left(90)
     turtle.up()
 
+def draw_points(points):
+    turtle.setworldcoordinates(min_x, min_y, max_x, max_y)  # uprava zobrazovaciho okna
+    turtle.speed(0)
+    turtle.ht()
+    turtle.tracer(50, 1)
+
+    for i in range(len(points)):  # vykresleni bodu
+        turtle.up()
+        turtle.setpos(points[i][1], points[i][2])
+        turtle.down()
+        turtle.dot(5, "blue")
 
 if len(sys.argv) != 3: #osetreni mnozstvi vstupnich argumentu
     print('malo nebo moc argumentu')
     exit(1)
 else:
-    data = open_geojson(sys.argv[1],'r')
+    data = open_geojson(sys.argv[1])
 
 if sys.argv[2][-8:] == ".geojson": #kontrola koncovky vystupniho souboru
     out_file = sys.argv[2]
@@ -135,23 +146,13 @@ for feature in data['features']: #tvorba seznamu vstupnich bodu
 
 bbox = [min_x, min_y, max_x, max_y]
 
-turtle.setworldcoordinates(min_x, min_y, max_x, max_y) #uprava zobrazovaciho okna
-turtle.speed(0)
-turtle.ht()
-turtle.tracer(50, 1)
-
-for i in range(len(points)): #vykresleni bodu
-    turtle.up()
-    turtle.setpos(points[i][1], points[i][2])
-    turtle.down()
-    turtle.dot(5, "blue")
+draw_points(points)
 
 if len(points) <= group_size: #osetreni podminky, kdyz je velikost skupiny vetsi nebo rovna velikosti vsech bodu
     i = 0
     for feat in data['features']: #prirazeni kodu skupiny vystupnim bodum
         feat['properties']['cluster_id'] = 0
         i += 1
-
     with open(out_file, 'w') as out: #ulozeni vystupniho souboru
         json.dump(data, out)
 else:

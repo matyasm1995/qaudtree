@@ -127,7 +127,7 @@ def draw_bbox(bbox):
 
 
 def draw_points(points):
-    turtle.setworldcoordinates(min_x, min_y, max_x, max_y)  # uprava zobrazovaciho okna
+    turtle.setworldcoordinates(bbox[0], bbox[1], bbox[2], bbox[3])  # uprava zobrazovaciho okna
     turtle.speed(0)
     turtle.ht()
     turtle.tracer(50, 1)
@@ -148,16 +148,12 @@ out_file = sys.argv[2]
 
 points, bbox = compute_bbox(data)
 
-min_x = bbox[0]
-min_y = bbox[1]
-max_x = bbox[2]
-max_y = bbox[3]
-
 draw_points(points)
 
 group_size = 50  # maximalni velikost skupiny
 
 if len(points) <= group_size:  # osetreni podminky, kdyz je velikost skupiny vetsi nebo rovna velikosti vsech bodu
+    draw_bbox(bbox)
     for i, value in enumerate(data['features'], 0):
         value['properties']['cluster_id'] = 0
 else:
@@ -167,9 +163,14 @@ else:
     for i, value in enumerate(data['features'], 0):
         value['properties']['cluster_id'] = sorted_points[i][3]  # prirazeni kodu skupiny vystupnim bodum
 
-with open(out_file, 'w') as out:  # ulozeni vystupniho souboru
-    json.dump(data, out)
-
-output = open_geojson(out_file)  # test vystupniho souboru
+dir = os.path.dirname(os.path.abspath(out_file))
+if os.access(dir, os.W_OK):
+    with open(out_file, 'w') as out:  # ulozeni vystupniho souboru
+        json.dump(data, out)
+    output = open_geojson(out_file)  # test vystupniho souboru
+else:
+    print('cesta k vystupnimu souboru neexistuje, nebo neni mozny zapis')
 
 turtle.exitonclick()
+
+

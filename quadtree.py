@@ -22,7 +22,7 @@ def open_geojson(file_name):
     return open_file
 
 
-def build_quadtree(in_points, out_points, bbox, quadrant=0, size=10):
+def build_quadtree(in_points, out_points, bbox, quadrant=0, size=50):
     """
     rekurzivní funkce pro dělení bodů do kvadrantů
     :param in_points: seznam vstupních bodů
@@ -57,7 +57,7 @@ def build_quadtree(in_points, out_points, bbox, quadrant=0, size=10):
 
 def select_points(points, boundaries, quad):
     """
-    funkce pro výběr bodů v kvadrantu
+    funkce pro výběr bodů v kvadrantu a tvorby jedinečného ID skupiny
     :param points: seznam vstupních bodů
     :param boundaries: hranice výběru = bbox
     :param quad: číslo kvadrantu pro tvorbu kodu

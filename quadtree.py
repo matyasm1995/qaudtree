@@ -4,7 +4,7 @@ from operator import itemgetter
 
 def open_geojson(file_name):
     """
-    funkce pro otevření geojson
+    funkce pro otevření geojsonu
     :param file_name: absulutní/relativní cesta k souboru
     :return: otevřený soubor
     """
@@ -26,7 +26,7 @@ def build_quadtree(in_points, out_points, bbox, quadrant=0, size=50):
     """
     rekurzivní funkce pro dělení bodů do kvadrantů
     :param in_points: seznam vstupních bodů
-    :param out_points: prazdný seznam pro tvorbu výstupního seznamu bodů
+    :param out_points: prázdný seznam pro tvorbu výstupního seznamu bodů
     :param bbox: bounding box bodů
     :param quadrant: číslo kvadrantu
     :param size: maximalní velikost skupiny
@@ -79,7 +79,7 @@ def select_points(points, boundaries, quad):
 
 def compute_bbox(data):
     """
-    funkce která počítá rozeměry bounding boxu a zároveň vytváří seznam bodů ze vstupního geojsonu
+    funkce která počítá rozměry bounding boxu a zároveň vytváří seznam bodů ze vstupního geojsonu
     :param data: otevřený vstupní geojson
     :return: seznam bodů, rozměry bounding boxu
     """
